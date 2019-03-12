@@ -30,7 +30,6 @@ type service struct {
 	rcvr     reflect.Value             // receiver of methods for the service
 	rcvrType reflect.Type              // type of the receiver
 	methods  map[string]*serviceMethod // registered methods
-	passReq  bool
 }
 
 type serviceMethod struct {
@@ -50,14 +49,13 @@ type serviceMap struct {
 }
 
 // register adds a new service using reflection to extract its methods.
-func (m *serviceMap) register(rcvr interface{}, name string, passReq bool) error {
+func (m *serviceMap) register(rcvr interface{}, name string) error {
 	// Setup service.
 	s := &service{
 		name:     name,
 		rcvr:     reflect.ValueOf(rcvr),
 		rcvrType: reflect.TypeOf(rcvr),
 		methods:  make(map[string]*serviceMethod),
-		passReq:  passReq,
 	}
 	if name == "" {
 		s.name = reflect.Indirect(s.rcvr).Type().Name()
@@ -73,40 +71,26 @@ func (m *serviceMap) register(rcvr interface{}, name string, passReq bool) error
 	for i := 0; i < s.rcvrType.NumMethod(); i++ {
 		method := s.rcvrType.Method(i)
 		mtype := method.Type
-
-		// offset the parameter indexes by one if the
-		// service methods accept an HTTP request pointer
-		var paramOffset int
-		if passReq {
-			paramOffset = 1
-		} else {
-			paramOffset = 0
-		}
-
 		// Method must be exported.
 		if method.PkgPath != "" {
 			continue
 		}
 		// Method needs four ins: receiver, *http.Request, *args, *reply.
-		if mtype.NumIn() != 3+paramOffset {
+		if mtype.NumIn() != 4 {
 			continue
 		}
-
-		// If the service methods accept an HTTP request pointer
-		if passReq {
-			// First argument must be a pointer and must be http.Request.
-			reqType := mtype.In(1)
-			if reqType.Kind() != reflect.Ptr || reqType.Elem() != typeOfRequest {
-				continue
-			}
+		// First argument must be a pointer and must be http.Request.
+		reqType := mtype.In(1)
+		if reqType.Kind() != reflect.Ptr || reqType.Elem() != typeOfRequest {
+			continue
 		}
-		// Next argument must be a pointer and must be exported.
-		args := mtype.In(1 + paramOffset)
+		// Second argument must be a pointer and must be exported.
+		args := mtype.In(2)
 		if args.Kind() != reflect.Ptr || !isExportedOrBuiltin(args) {
 			continue
 		}
-		// Next argument must be a pointer and must be exported.
-		reply := mtype.In(2 + paramOffset)
+		// Third argument must be a pointer and must be exported.
+		reply := mtype.In(3)
 		if reply.Kind() != reflect.Ptr || !isExportedOrBuiltin(reply) {
 			continue
 		}

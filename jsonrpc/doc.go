@@ -55,4 +55,4 @@ Check the gorilla/rpc documentation for more details:
 
 	http://gorilla-web.appspot.com/pkg/rpc
 */
-package json
+package jsonrpc

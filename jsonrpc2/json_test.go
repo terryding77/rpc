@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json2
+package jsonrpc2
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gorilla/rpc/v2"
+	"github.com/terryding77/rpc"
 )
 
 // ResponseRecorder is an implementation of http.ResponseWriter that
