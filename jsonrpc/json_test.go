@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json
+package jsonrpc
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gorilla/rpc/v2"
+	"github.com/terryding77/rpc"
 )
 
 var (

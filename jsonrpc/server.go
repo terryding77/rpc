@@ -3,17 +3,29 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json
+package jsonrpc
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/gorilla/rpc"
+	"github.com/terryding77/rpc"
 )
 
 var null = json.RawMessage([]byte("null"))
+
+// An Error is a wrapper for a JSON interface value. It can be used by either
+// a service's handler func to write more complex JSON data to an error field
+// of a server's response, or by a client to read it.
+type Error struct {
+	Data interface{}
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("%v", e.Data)
+}
 
 // ----------------------------------------------------------------------------
 // Request and Response
@@ -27,7 +39,7 @@ type serverRequest struct {
 	Params *json.RawMessage `json:"params"`
 	// The request id. This can be of any type. It is used to match the
 	// response with the request that it is replying to.
-	Id *json.RawMessage `json:"id"`
+	ID *json.RawMessage `json:"id"`
 }
 
 // serverResponse represents a JSON-RPC response returned by the server.
@@ -39,7 +51,7 @@ type serverResponse struct {
 	// null if there was no error.
 	Error interface{} `json:"error"`
 	// This must be the same id as the request it is responding to.
-	Id *json.RawMessage `json:"id"`
+	ID *json.RawMessage `json:"id"`
 }
 
 // ----------------------------------------------------------------------------
@@ -105,32 +117,40 @@ func (c *CodecRequest) ReadRequest(args interface{}) error {
 }
 
 // WriteResponse encodes the response and writes it to the ResponseWriter.
-//
-// The err parameter is the error resulted from calling the RPC method,
-// or nil if there was no error.
-func (c *CodecRequest) WriteResponse(w http.ResponseWriter, reply interface{}, methodErr error) error {
-	if c.err != nil {
-		return c.err
-	}
-	res := &serverResponse{
-		Result: reply,
-		Error:  &null,
-		Id:     c.request.Id,
-	}
-	if methodErr != nil {
-		// Propagate error message as string.
-		res.Error = methodErr.Error()
-		// Result must be null if there was an error invoking the method.
-		// http://json-rpc.org/wiki/specification#a1.2Response
-		res.Result = &null
-	}
-	if c.request.Id == nil {
+func (c *CodecRequest) WriteResponse(w http.ResponseWriter, reply interface{}) {
+	if c.request.ID != nil {
 		// Id is null for notifications and they don't have a response.
-		res.Id = &null
-	} else {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		encoder := json.NewEncoder(w)
-		c.err = encoder.Encode(res)
+		res := &serverResponse{
+			Result: reply,
+			Error:  &null,
+			ID:     c.request.ID,
+		}
+		c.writeServerResponse(w, 200, res)
 	}
-	return c.err
+}
+
+// WriteError encodes the error response and writes it to the ResponseWriter
+func (c *CodecRequest) WriteError(w http.ResponseWriter, _ int, err error) {
+	res := &serverResponse{
+		Result: &null,
+		ID:     c.request.ID,
+	}
+	if jsonErr, ok := err.(*Error); ok {
+		res.Error = jsonErr.Data
+	} else {
+		res.Error = err.Error()
+	}
+	c.writeServerResponse(w, 400, res)
+}
+
+func (c *CodecRequest) writeServerResponse(w http.ResponseWriter, status int, res *serverResponse) {
+	b, err := json.Marshal(res)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(status)
+		w.Write(b)
+	} else {
+		// Not sure in which case will this happen. But seems harmless.
+		rpc.WriteHTTPError(w, 400, err.Error())
+	}
 }

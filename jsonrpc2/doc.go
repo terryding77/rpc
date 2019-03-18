@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package gorilla/rpc is a foundation for RPC over HTTP services, providing
+Package terryding77/rpc is a foundation for RPC over HTTP services, providing
 access to the exported methods of an object through HTTP requests.
 
 This package derives from the standard net/rpc package but uses a single HTTP
@@ -19,16 +19,18 @@ compared to net/rpc:
 Let's setup a server and register a codec and service:
 
 	import (
-		"http"
-		"github.com/gorilla/rpc/v2"
-		"github.com/gorilla/rpc/v2/json"
+		"net/http"
+		"github.com/terryding77/rpc"
+		"github.com/terryding77/rpc/jsonrpc"
 	)
 
-	func init() {
+	func main() {
 		s := rpc.NewServer()
-		s.RegisterCodec(json.NewCodec(), "application/json")
+		s.RegisterCodec(jsonrpc.NewCodec(), "application/json")
 		s.RegisterService(new(HelloService), "")
-		http.Handle("/rpc", s)
+        http.Handle("/rpc", s)
+        log.Print("start server")
+        log.Fatal(http.ListenAndServe(":8080", nil))
 	}
 
 This server handles requests to the "/rpc" path using a JSON codec.
@@ -60,6 +62,10 @@ That's all about the server setup. Now let's define a simple service:
 The example above defines a service with a method "HelloService.Say" and
 the arguments and reply related to that method.
 
+Use curl to test this:
+
+curl -H "Content-Type:application/json" -X POST --data '{"jsonrpc":"2.0","method":"HelloService.Say","params":{"Who":"terry"},"id":1}' http://localhost:8080/rpc
+
 The service must be exported (begin with an upper case letter) or local
 (defined in the package registering the service).
 
@@ -73,9 +79,5 @@ and make available the ones that follow these rules:
 	- The method has return type error.
 
 All other methods are ignored.
-
-Gorilla has packages with common RPC codecs. Check out their documentation:
-
-	JSON: http://gorilla-web.appspot.com/pkg/rpc/json
 */
-package rpc
+package jsonrpc2

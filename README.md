@@ -1,7 +1,7 @@
-rpc
-===
-[![Build Status](https://travis-ci.org/gorilla/rpc.png?branch=master)](https://travis-ci.org/gorilla/rpc)
+# rpc
 
-gorilla/rpc is a foundation for RPC over HTTP services, providing access to the exported methods of an object through HTTP requests.
+this is a **fork version** of `github.com/gorilla/rpc`
 
-Read the full documentation here: https://www.gorillatoolkit.org/pkg/rpc
+rpc support for JSON-RPC 1.0/2.0 Specification.
+
+terryding/rpc is a foundation for RPC over HTTP services, providing access to the exported methods of an object through HTTP requests.
