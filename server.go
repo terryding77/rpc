@@ -133,7 +133,7 @@ func (s *Server) HasMethod(method string) bool {
 // ServeHTTP
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		WriteError(w, 405, "rpc: POST method required, received "+r.Method)
+		WriteHTTPError(w, 405, "rpc: POST method required, received "+r.Method)
 		return
 	}
 	contentType := r.Header.Get("Content-Type")
@@ -149,7 +149,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			codec = c
 		}
 	} else if codec = s.codecs[strings.ToLower(contentType)]; codec == nil {
-		WriteError(w, 415, "rpc: unrecognized Content-Type: "+contentType)
+		WriteHTTPError(w, 415, "rpc: unrecognized Content-Type: "+contentType)
 		return
 	}
 	// Create a new codec request.
@@ -225,7 +225,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func WriteError(w http.ResponseWriter, status int, msg string) {
+// WriteHTTPError writes the status code and msg into HTTP ResponseWriter
+func WriteHTTPError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(status)
 	fmt.Fprint(w, msg)

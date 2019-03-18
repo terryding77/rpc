@@ -22,8 +22,11 @@ type IncrReq struct {
 	Delta int
 }
 
+type EmptyResponse struct {
+}
+
 // Notification.
-func (c *Counter) Incr(r *http.Request, req *IncrReq, res *jsonrpc2.EmptyResponse) error {
+func (c *Counter) Incr(r *http.Request, req *IncrReq, res *EmptyResponse) error {
 	log.Printf("<- Incr %+v", *req)
 	c.Count += req.Delta
 	return nil
